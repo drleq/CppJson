@@ -177,7 +177,7 @@ namespace json {
             case JsonValueType::Int: m_data.Int = 0; break;
             case JsonValueType::UInt: m_data.UInt = 0; break;
             case JsonValueType::Real: m_data.Real = 0; break;
-            case JsonValueType::Boolean: m_data.Bool = 0; break;
+            case JsonValueType::Boolean: m_data.Bool = false; break;
             case JsonValueType::String: new (&m_data.String) std::string(); break;
             case JsonValueType::Array: new (&m_data.Array) JsonArray(); break;
             case JsonValueType::Object: new (&m_data.Object) JsonObject(); break;
@@ -404,8 +404,11 @@ namespace json {
             case JsonValueType::UInt: return (m_data.UInt != 0);
             case JsonValueType::Real: return (m_data.Real != 0.0);
             case JsonValueType::Boolean: return m_data.Bool;
-
             case JsonValueType::String:
+                if (m_data.String == "true") { return true; }
+                if (m_data.String == "false") { return false; }
+                throw std::runtime_error("Failed to convert string to bool");
+
             case JsonValueType::Null:
             case JsonValueType::Array:
             case JsonValueType::Object:
@@ -417,11 +420,11 @@ namespace json {
 
         //----------------------------------------------------------------------------------------------------
 
-        const JsonArray& AsArray() const { return m_data.Array; }
-              JsonArray& AsArray()       { return m_data.Array; }
+        const JsonArray& AsArray() const { AssertArray(); return m_data.Array; }
+              JsonArray& AsArray()       { AssertArray(); return m_data.Array; }
 
-        const JsonObject& AsObject() const { return m_data.Object; }
-              JsonObject& AsObject()       { return m_data.Object; }
+        const JsonObject& AsObject() const { AssertObject(); return m_data.Object; }
+              JsonObject& AsObject()       { AssertObject(); return m_data.Object; }
 
     private:
         JsonValueType m_type;
@@ -458,7 +461,18 @@ namespace json {
 
             m_type = JsonValueType::Null;
         }
-        
+
+        inline void AssertArray() const {
+            if (m_type != JsonValueType::Array) {
+                throw std::logic_error("Value is not an array");
+            }
+        }
+        inline void AssertObject() const {
+            if (m_type != JsonValueType::Object) {
+                throw std::logic_error("Value is not an object");
+            }
+        }
+
         friend class ObjectWriter;
     };
 

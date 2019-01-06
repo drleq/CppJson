@@ -42,6 +42,7 @@ add_executable(Tests
     ToString.cpp
     JsonArrayTest.cpp
     JsonObjectTest.cpp
+    JsonValueTest.cpp
     ../Json.hpp)
 
 # Configure the include directories
