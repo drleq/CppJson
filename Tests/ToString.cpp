@@ -69,4 +69,10 @@ namespace CppUnitTestFramework::Ext {
         return ss.str();
     }
 
+    //--------------------------------------------------------------------------------------------------------
+
+    std::string ToString(std::nullopt_t) {
+        return "?";
+    }
+
 }

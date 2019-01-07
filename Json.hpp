@@ -922,6 +922,10 @@ namespace json {
         }
 
     private:
+        ObjectReader() {
+            m_stack.resize(16);
+        }
+
         struct Node {
             JsonValue Value;
             std::string ObjectKey;
@@ -1197,9 +1201,21 @@ namespace json {
         //----------------------------------------------------------------------------------------------------
 
         static void WriteDouble(std::string& buf, double value) {
-            char tmp[32];
-            sprintf_s(tmp, "%g", value);
-            buf.append(tmp);
+            if (std::isnan(value)) {
+                buf.append("\"nan\"", 5);
+
+            } else if (std::isinf(value)) {
+                if (value >= 0) {
+                    buf.append("\"inf\"", 5);
+                } else {
+                    buf.append("\"-inf\"", 6);
+                }
+
+            } else {
+                char tmp[32];
+                sprintf_s(tmp, "%g", value);
+                buf.append(tmp);
+            }
         }
 
         //----------------------------------------------------------------------------------------------------
