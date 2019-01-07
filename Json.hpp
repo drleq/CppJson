@@ -803,104 +803,47 @@ namespace json {
         //----------------------------------------------------------------------------------------------------
 
         static bool ParseNumber(State& state) {
-            // Assume integer to begin with.
             bool is_negative = *state.NextChar == '-';
             if (is_negative) { ++state.NextChar; }
 
             if (state.Eof()) { return false; }
 
-            uintmax_t i;
-            if (*state.NextChar == '0') {
-                i = 0;
-                ++state.NextChar;
-            } else if (*state.NextChar >= '1' && *state.NextChar <= '9') {
-                i = *state.NextChar - '0';
-                ++state.NextChar;
-
-                while (!state.Eof()) {
-                    uint32_t n = uint32_t(*state.NextChar) - '0';
-                    if (n > 9) { break; }
-
-                    i = (i * 10) + n;
-                    ++state.NextChar;
-                }
-            } else {
-                return false;
-            }
-
-            if (state.Eof()) {
-                if (is_negative) {
-                    return state.Hooks->OnInt(-intmax_t(i));
-                } else {
-                    return state.Hooks->OnUInt(i);
-                }
-            }
-
-            // Check for double specific information.
+            auto start = state.NextChar;
             bool is_double = false;
-            uint64_t fraction = 0;
-            int64_t fraction_exponent = 0;
-            int64_t exponent = 0;
-            if (*state.NextChar == '.') {
-                is_double = true;
-                ++state.NextChar;
-
-                if (state.Eof()) { return false; }
-
-                do {
-                    uint32_t n = static_cast<uint32_t>(*state.NextChar) - '0';
-                    if (n > 9) { break; }
-
-                    fraction = (fraction * 10) + n;
-                    --fraction_exponent;
+            while (!state.Eof()) {
+                auto c = *state.NextChar;
+                if (c >= '0' && c <= '9') {
                     ++state.NextChar;
-                } while (!state.Eof());
-            }
-            if (*state.NextChar == 'e' || *state.NextChar == 'E') {
-                is_double = true;
-                ++state.NextChar;
-
-                if (state.Eof()) { return false; }
-
-                bool is_exp_negative = (*state.NextChar == '-');
-                if (is_exp_negative || *state.NextChar == '+') {
+                } else if (c == '-' || c == '+') {
                     ++state.NextChar;
-                    if (state.Eof()) { return false; }
-                }
-
-                do {
-                    uint32_t n = uint32_t(*state.NextChar) - '0';
-                    if (n > 9) { break; }
-
-                    exponent = (exponent * 10) + n;
+                } else if (c == '.' || c == 'e' || c == 'E') {
+                    is_double = true;
                     ++state.NextChar;
-                } while (!state.Eof());
-
-                if (is_exp_negative) {
-                    exponent = -exponent;
+                } else {
+                    break;
                 }
             }
 
+            auto end = const_cast<char*>(state.NextChar);
             if (is_double) {
-                int64_t combined_exponent = exponent + fraction_exponent;
-                double real = static_cast<double>(fraction);
-                if (combined_exponent < 0) {
-                    real /= std::pow(1.0, static_cast<double>(-combined_exponent));
-                } else {
-                    real *= std::pow(1.0, static_cast<double>(combined_exponent));
-                }
-                real += i;
-                if (is_negative) {
-                    return state.Hooks->OnReal(-real);
-                } else {
-                    return state.Hooks->OnReal(real);
-                }
-            }
-
-            if (is_negative) {
-                return state.Hooks->OnInt(-static_cast<intmax_t>(i));
+                double value = std::strtod(start, &end);
+                if (start == end) { return false; }
+                if (is_negative) { value = -value; }
+                return state.Hooks->OnReal(value);
+                
             } else {
-                return state.Hooks->OnUInt(i);
+                uint64_t value = std::strtoull(start, &end, 10);
+                if (start == end) { return false; }
+                if (is_negative) {
+                    auto limit = static_cast<uint64_t>(-std::numeric_limits<int64_t>::min());
+                    if (value > limit) {
+                        // Underflow.
+                        return false;
+                    }
+                    return state.Hooks->OnInt(-static_cast<int64_t>(value));
+                } else {
+                    return state.Hooks->OnUInt(value);
+                }
             }
         }
     };

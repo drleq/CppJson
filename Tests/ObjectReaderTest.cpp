@@ -25,9 +25,9 @@ namespace json_test {
     //--------------------------------------------------------------------------------------------------------
 
     TEST_CASE(ObjectReaderTest, Parse_Int) {
-        CHECK_EQUAL(ObjectReader::Parse("0"), 0);
+        CHECK_EQUAL(ObjectReader::Parse("0"), 0u);
         CHECK_EQUAL(ObjectReader::Parse("-9223372036854775808"), std::numeric_limits<int64_t>::min());
-        CHECK_EQUAL(ObjectReader::Parse("9223372036854775807"), std::numeric_limits<int64_t>::max());
+        CHECK_EQUAL(ObjectReader::Parse("9223372036854775807"), static_cast<uint64_t>(std::numeric_limits<int64_t>::max()));
     }
 
     //--------------------------------------------------------------------------------------------------------
@@ -40,9 +40,21 @@ namespace json_test {
     //--------------------------------------------------------------------------------------------------------
 
     TEST_CASE(ObjectReaderTest, Parse_Real) {
-        CHECK_EQUAL(ObjectReader::Parse("2.22507e-308"), std::numeric_limits<double>::min());
-        CHECK_EQUAL(ObjectReader::Parse("-1.79769e+308"), std::numeric_limits<double>::lowest());
-        CHECK_EQUAL(ObjectReader::Parse("1.79769e+308"), std::numeric_limits<double>::max());
+        CHECK_CLOSE(
+            ObjectReader::Parse("2.22507e-308")->AsDouble(),
+            std::numeric_limits<double>::min(),
+            1e-5
+        );
+        CHECK_CLOSE(
+            ObjectReader::Parse("-1.79769e+308")->AsDouble(),
+            std::numeric_limits<double>::lowest(),
+            1e-5
+        );
+        CHECK_CLOSE(
+            ObjectReader::Parse("1.79769e+308")->AsDouble(),
+            std::numeric_limits<double>::max(),
+            1e-5
+        );
         CHECK_EQUAL(ObjectReader::Parse("nan"), std::nullopt);
         CHECK_EQUAL(ObjectReader::Parse("inf"), std::nullopt);
         CHECK_EQUAL(ObjectReader::Parse("-inf"), std::nullopt);
@@ -69,15 +81,15 @@ namespace json_test {
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[1234, \"Value\", null]")->AsArray(),
-                JsonArray({1234, "Value", nullptr })
+                JsonArray({ 1234u, "Value", nullptr })
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[\n    1234,\n    \"Value\",\n    null,\n    true\n]")->AsArray(),
-                JsonArray({ 1234, "Value", nullptr, true })
+                JsonArray({ 1234u, "Value", nullptr, true })
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[\n    \"Outer\",\n    [1234]\n]")->AsArray(),
-                JsonArray({ "Outer", JsonArray{ 1234 } })
+                JsonArray({ "Outer", JsonArray{ 1234u } })
             );
         }
 
@@ -88,15 +100,15 @@ namespace json_test {
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[1234,\"Value\",null]")->AsArray(),
-                JsonArray({1234, "Value", nullptr })
+                JsonArray({1234u, "Value", nullptr })
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[1234,\"Value\",null,true]")->AsArray(),
-                JsonArray({ 1234, "Value", nullptr, true })
+                JsonArray({ 1234u, "Value", nullptr, true })
             );
             CHECK_EQUAL(
                 ObjectReader::Parse("[\"Outer\",[1234]]")->AsArray(),
-                JsonArray({ "Outer", JsonArray{ 1234 } })
+                JsonArray({ "Outer", JsonArray{ 1234u } })
             );
         }
     }
