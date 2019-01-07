@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#ifdef JSONCPP_USE_SSE
+#ifdef CPPJSON_USE_SSE
     #include <emmintrin.h>
 #endif
 
@@ -605,7 +605,7 @@ namespace json {
                 return;
             }
 
-#ifdef JSONCPP_USE_SSE
+#ifdef CPPJSON_USE_SSE
             const __m128i QuoteChar128 = _mm_set1_epi8('"');
             const __m128i EscapeChar128 = _mm_set1_epi8('\\');
 

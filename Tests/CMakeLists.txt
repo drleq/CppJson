@@ -45,6 +45,7 @@ add_executable(Tests
     JsonValueTest.cpp
     ObjectWriterTest.cpp
     ObjectReaderTest.cpp
+    ObjectReaderSSETest.cpp
     ../Json.hpp)
 
 # Configure the include directories

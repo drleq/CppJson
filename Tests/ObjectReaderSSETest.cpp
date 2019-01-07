@@ -1,3 +1,4 @@
+#define CPPJSON_USE_SSE
 #include "Json.hpp"
 
 #include "CppUnitTestFramework.hpp"
@@ -6,25 +7,25 @@
 using namespace json;
 
 namespace {
-    struct ObjectReaderTest {};
+    struct ObjectReaderSSETest {};
 }
 
 namespace json_test {
 
-    TEST_CASE(ObjectReaderTest, Parse_Null) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Null) {
         CHECK_EQUAL(ObjectReader::Parse("null"), nullptr);
     }
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_Boolean) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Boolean) {
         CHECK_EQUAL(ObjectReader::Parse("true"), true);
         CHECK_EQUAL(ObjectReader::Parse("false"), false);
     }
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_Int) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Int) {
         CHECK_EQUAL(ObjectReader::Parse("0"), 0u);
         CHECK_EQUAL(ObjectReader::Parse("-9223372036854775808"), std::numeric_limits<int64_t>::min());
         CHECK_EQUAL(ObjectReader::Parse("9223372036854775807"), static_cast<uint64_t>(std::numeric_limits<int64_t>::max()));
@@ -32,14 +33,14 @@ namespace json_test {
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_UInt) {
+    TEST_CASE(ObjectReaderSSETest, Parse_UInt) {
         CHECK_EQUAL(ObjectReader::Parse("0"), std::numeric_limits<uint64_t>::min());
         CHECK_EQUAL(ObjectReader::Parse("18446744073709551615"), std::numeric_limits<uint64_t>::max());
     }
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_Real) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Real) {
         CHECK_CLOSE(
             ObjectReader::Parse("2.22507e-308")->AsDouble(),
             std::numeric_limits<double>::min(),
@@ -65,7 +66,7 @@ namespace json_test {
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_String) {
+    TEST_CASE(ObjectReaderSSETest, Parse_String) {
         CHECK_EQUAL(ObjectReader::Parse("\"\""), "");
         CHECK_EQUAL(ObjectReader::Parse("\"String value\""), "String value");
         CHECK_EQUAL(ObjectReader::Parse(u8"\"ハローワールド\""), u8"ハローワールド");
@@ -73,7 +74,7 @@ namespace json_test {
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_Array) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Array) {
         SECTION("Styled") {
             CHECK_EQUAL(
                 ObjectReader::Parse("[]")->AsArray(),
@@ -115,7 +116,7 @@ namespace json_test {
 
     //--------------------------------------------------------------------------------------------------------
 
-    TEST_CASE(ObjectReaderTest, Parse_Object) {
+    TEST_CASE(ObjectReaderSSETest, Parse_Object) {
         JsonObject empty;
         JsonObject non_empty{
             { "First", 1234 },
