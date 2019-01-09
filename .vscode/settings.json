@@ -55,5 +55,7 @@
         "xtree": "cpp",
         "xutility": "cpp"
     },
-    "cppUnitTestFramework.executable": "./build/output/Tests.exe"
+    "cppUnitTestFramework.executable": "./build/output/Tests",
+    "cppUnitTestFramework.buildDirectory": "./build",
+    "cmake.configureOnOpen": true
 }

@@ -1,6 +1,7 @@
-#include "Json.hpp"
+#pragma once
 
-#include "CppUnitTestFramework.hpp"
+#include "Json.hpp"
+#include <optional>
 
 namespace CppUnitTestFramework::Ext {
 
@@ -10,12 +11,12 @@ namespace CppUnitTestFramework::Ext {
 
     //--------------------------------------------------------------------------------------------------------
 
-    std::string ToString(std::nullopt_t);
+    std::string ToString(const std::nullopt_t&);
 
     template <typename T>
     std::string ToString(const std::optional<T>& value) {
         if (!value.has_value()) {
-            return ToString(std::nullopt);
+            return "?";
         }
         return ToString(value.value());
     }
