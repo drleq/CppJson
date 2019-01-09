@@ -71,7 +71,7 @@ namespace CppUnitTestFramework::Ext {
 
     //--------------------------------------------------------------------------------------------------------
 
-    std::string ToString(std::nullopt_t) {
+    std::string ToString(const std::nullopt_t&) {
         return "?";
     }
 

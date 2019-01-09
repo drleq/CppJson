@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <optional>
 #include <string>
@@ -181,6 +182,10 @@ namespace json {
             case JsonValueType::String: new (&m_data.String) std::string(); break;
             case JsonValueType::Array: new (&m_data.Array) JsonArray(); break;
             case JsonValueType::Object: new (&m_data.Object) JsonObject(); break;
+
+            case JsonValueType::Null:
+            default:
+                break;
             }
         }
 
@@ -220,6 +225,7 @@ namespace json {
             case JsonValueType::String: new (&m_data.String) std::string(other.m_data.String); break;
             case JsonValueType::Array: new (&m_data.Array) JsonArray(other.m_data.Array); break;
             case JsonValueType::Object: new (&m_data.Object) JsonObject(other.m_data.Object); break;
+            case JsonValueType::Null: break;
             }
             return *this;
         }
@@ -238,6 +244,7 @@ namespace json {
             case JsonValueType::String: new (&m_data.String) std::string(std::move(other.m_data.String)); break;
             case JsonValueType::Array: new (&m_data.Array) JsonArray(std::move(other.m_data.Array)); break;
             case JsonValueType::Object: new (&m_data.Object) JsonObject(std::move(other.m_data.Object)); break;
+            case JsonValueType::Null: break;
             }
             other.FreeData();
             other.m_type = JsonValueType::Null;
@@ -457,6 +464,9 @@ namespace json {
             case JsonValueType::Object:
                 m_data.Object.~JsonObject();
                 break;
+
+            default:
+                break;
             }
 
             m_type = JsonValueType::Null;
@@ -571,7 +581,7 @@ namespace json {
 
                 uint16_t bitmask = static_cast<uint16_t>(~_mm_movemask_epi8(mask));
                 if (bitmask != 0) {
-#ifdef _GNUG_
+#ifdef __GNUG__
                     int32_t offset = __builtin_ffs(static_cast<int32_t>(bitmask)) - 1;
 #endif
 #ifdef _MSC_VER
@@ -623,7 +633,7 @@ namespace json {
 
                     uint16_t bitmask_unescaped_quote = bitmask_quote & ~bitmask_escape;
                     if (bitmask_unescaped_quote != 0) {
-#ifdef _GNUG_
+#ifdef __GNUG__
                         int32_t offset = __builtin_ffs(static_cast<int32_t>(bitmask_unescaped_quote)) - 1;
 #endif
 #ifdef _MSC_VER
@@ -835,7 +845,7 @@ namespace json {
                 uint64_t value = std::strtoull(start, &end, 10);
                 if (start == end) { return false; }
                 if (is_negative) {
-                    auto limit = static_cast<uint64_t>(-std::numeric_limits<int64_t>::min());
+                    auto limit = static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1;
                     if (value > limit) {
                         // Underflow.
                         return false;
@@ -1156,7 +1166,7 @@ namespace json {
 
             } else {
                 char tmp[32];
-                sprintf_s(tmp, "%g", value);
+                std::snprintf(tmp, 32, "%g", value);
                 buf.append(tmp);
             }
         }

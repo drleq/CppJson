@@ -1,9 +1,11 @@
 #pragma once
 
 #include <array>
+#include <cstring>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string_view>

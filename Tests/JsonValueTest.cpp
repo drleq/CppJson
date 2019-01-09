@@ -1,7 +1,7 @@
 #include "Json.hpp"
 
-#include "CppUnitTestFramework.hpp"
 #include "ToString.h"
+#include "CppUnitTestFramework.hpp"
 #include <cmath>
 
 using namespace json;
@@ -75,7 +75,7 @@ namespace json_test {
         }
 
         SECTION("Using int64_t") {
-            JsonValue zero(0ll);
+            JsonValue zero(int64_t(0));
             CHECK(zero.IsInt());
             CHECK(zero.IsInteger());
             CHECK_EQUAL(zero.Type(), JsonValueType::Int);
@@ -255,7 +255,7 @@ namespace json_test {
         CHECK(value_uint.IsUInt());
         CHECK(value_uint.IsInteger());
         CHECK_EQUAL(value_uint.Type(), JsonValueType::UInt);
-        CHECK_EQUAL(value_uint.AsUInt(), 0);
+        CHECK_EQUAL(value_uint.AsUInt(), 0ull);
 
         JsonValue value_real(JsonValueType::Real);
         CHECK(value_real.IsReal());
@@ -429,13 +429,13 @@ namespace json_test {
     //--------------------------------------------------------------------------------------------------------
 
     TEST_CASE(JsonValueTest, AsUInt) {
-        CHECK_EQUAL(JsonValue(1234u).AsUInt(), 1234);
-        CHECK_EQUAL(JsonValue(1234).AsUInt(), 1234);
-        CHECK_EQUAL(JsonValue(1234.5).AsUInt(), 1234);
-        CHECK_EQUAL(JsonValue(1234.5f).AsUInt(), 1234);
-        CHECK_EQUAL(JsonValue(true).AsUInt(), 1);
-        CHECK_EQUAL(JsonValue(false).AsUInt(), 0);
-        CHECK_EQUAL(JsonValue("1234").AsUInt(), 1234);
+        CHECK_EQUAL(JsonValue(1234u).AsUInt(), 1234u);
+        CHECK_EQUAL(JsonValue(1234).AsUInt(), 1234u);
+        CHECK_EQUAL(JsonValue(1234.5).AsUInt(), 1234u);
+        CHECK_EQUAL(JsonValue(1234.5f).AsUInt(), 1234u);
+        CHECK_EQUAL(JsonValue(true).AsUInt(), 1u);
+        CHECK_EQUAL(JsonValue(false).AsUInt(), 0u);
+        CHECK_EQUAL(JsonValue("1234").AsUInt(), 1234u);
 
         CHECK_THROW(std::logic_error, JsonValue().AsUInt());
         CHECK_THROW(std::logic_error, JsonValue(nullptr).AsUInt());

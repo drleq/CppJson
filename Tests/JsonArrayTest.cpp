@@ -1,7 +1,7 @@
 #include "Json.hpp"
 
-#include "CppUnitTestFramework.hpp"
 #include "ToString.h"
+#include "CppUnitTestFramework.hpp"
 
 using namespace json;
 
@@ -31,7 +31,7 @@ namespace json_test {
         CHECK(empty.empty());
 
         JsonArray non_empty { 1234, "String value", nullptr };
-        CHECK_EQUAL(non_empty.size(), 3);
+        CHECK_EQUAL(non_empty.size(), 3u);
         CHECK_EQUAL(non_empty[0], 1234);
         CHECK_EQUAL(non_empty[1], "String value");
         CHECK_EQUAL(non_empty[2], nullptr);
@@ -43,7 +43,7 @@ namespace json_test {
         JsonArray arr{ 1234, "String value", nullptr };
 
         JsonArray copy(arr.begin(), arr.end());
-        CHECK_EQUAL(copy.size(), 3);
+        CHECK_EQUAL(copy.size(), 3u);
         CHECK_EQUAL(copy[0], 1234);
         CHECK_EQUAL(copy[1], "String value");
         CHECK_EQUAL(copy[2], nullptr);
@@ -52,11 +52,11 @@ namespace json_test {
             std::make_move_iterator(arr.begin()),
             std::make_move_iterator(arr.end())
         );
-        CHECK_EQUAL(moved.size(), 3);
+        CHECK_EQUAL(moved.size(), 3u);
         CHECK_EQUAL(moved[0], 1234);
         CHECK_EQUAL(moved[1], "String value");
         CHECK_EQUAL(moved[2], nullptr);
-        CHECK_EQUAL(arr.size(), 3);
+        CHECK_EQUAL(arr.size(), 3u);
         CHECK_EQUAL(arr[0], nullptr);
         CHECK_EQUAL(arr[1], nullptr);
         CHECK_EQUAL(arr[2], nullptr);
@@ -69,7 +69,7 @@ namespace json_test {
             1234,
             JsonArray{ "Inner", "Values" }
         };
-        CHECK_EQUAL(outer.size(), 2);
+        CHECK_EQUAL(outer.size(), 2u);
         CHECK_EQUAL(outer[0], 1234);
         CHECK_EQUAL(outer[1], JsonValue(JsonArray{ "Inner", "Values" }));
     }

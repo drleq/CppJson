@@ -1,7 +1,7 @@
 #include "Json.hpp"
 
-#include "CppUnitTestFramework.hpp"
 #include "ToString.h"
+#include "CppUnitTestFramework.hpp"
 
 using namespace json;
 
@@ -35,7 +35,7 @@ namespace json_test {
             { "Second", "String value" },
             { "Third", nullptr }
         };
-        CHECK_EQUAL(non_empty.size(), 3);
+        CHECK_EQUAL(non_empty.size(), 3u);
         CHECK_EQUAL(non_empty["First"], 1234);
         CHECK_EQUAL(non_empty["Second"], "String value");
         CHECK_EQUAL(non_empty["Third"], nullptr);
@@ -51,7 +51,7 @@ namespace json_test {
         };
 
         JsonObject copy(obj.begin(), obj.end());
-        CHECK_EQUAL(copy.size(), 3);
+        CHECK_EQUAL(copy.size(), 3u);
         CHECK_EQUAL(copy["First"], 1234);
         CHECK_EQUAL(copy["Second"], "String value");
         CHECK_EQUAL(copy["Third"], nullptr);
@@ -60,11 +60,11 @@ namespace json_test {
             std::make_move_iterator(obj.begin()),
             std::make_move_iterator(obj.end())
         );
-        CHECK_EQUAL(moved.size(), 3);
+        CHECK_EQUAL(moved.size(), 3u);
         CHECK_EQUAL(moved["First"], 1234);
         CHECK_EQUAL(moved["Second"], "String value");
         CHECK_EQUAL(moved["Third"], nullptr);
-        CHECK_EQUAL(obj.size(), 3);
+        CHECK_EQUAL(obj.size(), 3u);
         CHECK_EQUAL(obj["First"], nullptr);
         CHECK_EQUAL(obj["Second"], nullptr);
         CHECK_EQUAL(obj["Third"], nullptr);
@@ -81,7 +81,7 @@ namespace json_test {
                 }
             }
         };
-        CHECK_EQUAL(outer.size(), 2);
+        CHECK_EQUAL(outer.size(), 2u);
         CHECK_EQUAL(outer["First"], 1234);
         CHECK_EQUAL(outer["Second"], JsonValue(JsonObject{ { "Inner", "Values" } }));
     }
