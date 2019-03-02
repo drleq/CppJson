@@ -1,5 +1,5 @@
 # CppJson
-A single header C++17 [JSON](https://en.wikipedia.org/wiki/JSON) library with a focus a simple declarative syntax.  It should compile with any C++17 compliant compiler without any additional source or binary dependencies.  SSE instructions can be optionally used to accelerate decoding.
+A single header C++17 [JSON](https://en.wikipedia.org/wiki/JSON) library with a focus on a simple declarative syntax.  It should compile with any C++17 compliant compiler without any additional source or binary dependencies.  SSE instructions can be optionally used to accelerate decoding.
 
 # Basic usage
 All JSON values are encapsulated in individual ```JsonValue``` objects.  The mapping of C++ types to JSON value types is intended to provide a balance of ease-of-use and functionality:
