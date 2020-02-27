@@ -72,6 +72,23 @@ if (!value00) {
 }
 ```
 
+De-serialization can optionally tolerate and ignore C-style comments in the JSON stream, sometimes referred to as "JSON with comments" or `jsonc`.  By default, this feature is disabled and any comments found by the parser will result in a parsing failure.  To enable this feature simply set the `ignore_comments` flag to `true`.
+
+```cpp
+std::string_view json = ...;
+// {
+//     // Woofles is the good boy of the house
+//     /* This comment is also allowed even though
+//        it spans multiple lines */
+//     "Name" : "Woofles",
+//     "Age" : 4,
+//     "Toys" : ["Ball", "Squeeky Bone"]
+// }
+
+auto value00 = ObjectReader::Parse(json);  // Fails as comments are not allowed
+auto value00 = ObjectReader::Parse(json, ignore_comments = true);  // Succeeds
+```
+
 ## "SAX" de-serialization
 Internally, the `ObjectReader` class implements the `ISimpleReaderHooks` interface and uses the `SimpleReader::Parse()` function to tokenize the JSON string.  The `SimpleReader` class acts as a "SAX" parser that invokes callbacks for each value it encounters.  If your application wants to filter out unwanted values without allocating memory for them then you should use this approach.
 
