@@ -59,7 +59,14 @@ namespace CppUnitTestFramework::Ext {
             if (i != 0) {
                 ss << ", ";
             }
-            ss << kvp.first << " : " << ToString(kvp.second);
+            ss << "\"" << kvp.first << "\" : ";
+            if (kvp.second.IsString()) {
+                ss << "\"" << ToString(kvp.second) << "\"";
+            } else {
+                ss << ToString(kvp.second);
+            }
+
+            ++i;
         }
         if (count < value.size()) {
             ss << ", ...";

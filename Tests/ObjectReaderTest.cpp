@@ -124,12 +124,216 @@ namespace json_test {
         };
 
         SECTION("Styled") {
-            CHECK_EQUAL(ObjectWriter::Write(empty, true), "{}");
-            CHECK_EQUAL(ObjectWriter::Write(non_empty, true), "{\n    \"First\" : 1234,\n    \"Second\" : \"Value\",\n    \"Third\" : null\n}");
+            CHECK_EQUAL(
+                ObjectReader::Parse("{}")->AsObject(),
+                JsonObject{}
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"First\" : 1234,\n    \"Second\" : \"Value\",\n    \"Third\" : null\n}")->AsObject(),
+                JsonObject({
+                    { "First", 1234u },
+                    { "Second", "Value" },
+                    { "Third", nullptr }
+                })
+            );
         }
         SECTION("Compact") {
-            CHECK_EQUAL(ObjectWriter::Write(empty, false), "{}");
-            CHECK_EQUAL(ObjectWriter::Write(non_empty, false), "{\"First\":1234,\"Second\":\"Value\",\"Third\":null}");
+            CHECK_EQUAL(
+                ObjectReader::Parse("{}")->AsObject(),
+                JsonObject{}
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\"First\":1234,\"Second\":\"Value\",\"Third\":null}")->AsObject(),
+                JsonObject({
+                    { "First", 1234u },
+                    { "Second", "Value" },
+                    { "Third", nullptr }
+                })
+            );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------------
+
+    TEST_CASE(ObjectReaderTest, Parse_SingleLineComment) {
+        SECTION("OnlyComment") {
+            CHECK_EQUAL(
+                ObjectReader::Parse("// Only a comment", true),
+                std::nullopt
+            );
+        }
+
+        SECTION("Null") {
+            CHECK_EQUAL(ObjectReader::Parse("// Before null\nnull", true), nullptr);
+            CHECK_EQUAL(ObjectReader::Parse("null// After null", true), nullptr);
+        }
+
+        SECTION("Bool") {
+            CHECK_EQUAL(ObjectReader::Parse("// Before bool\ntrue", true), true);
+            CHECK_EQUAL(ObjectReader::Parse("// Before bool\nfalse", true), false);
+            CHECK_EQUAL(ObjectReader::Parse("true// After bool", true), true);
+            CHECK_EQUAL(ObjectReader::Parse("false// After bool", true), false);
+        }
+
+        SECTION("Int") {
+            CHECK_EQUAL(ObjectReader::Parse("// Before int\n0", true), 0u);
+            CHECK_EQUAL(ObjectReader::Parse("// Before int\n-10", true), -10);
+            CHECK_EQUAL(ObjectReader::Parse("0// After int", true), 0u);
+            CHECK_EQUAL(ObjectReader::Parse("-10// After int", true), -10);
+        }
+
+        SECTION("Real") {
+            CHECK_EQUAL(ObjectReader::Parse("// Before real\n1.5", true), 1.5);
+            CHECK_EQUAL(ObjectReader::Parse("// Before real\n-1.5", true), -1.5);
+            CHECK_EQUAL(ObjectReader::Parse("1.5// After real", true), 1.5);
+            CHECK_EQUAL(ObjectReader::Parse("-1.5// After real", true), -1.5);
+        }
+
+        SECTION("String") {
+            CHECK_EQUAL(ObjectReader::Parse("// Befor string\n\"hello\"", true), "hello");
+            CHECK_EQUAL(ObjectReader::Parse("// Befor string\n\"// Not a comment\"", true), "// Not a comment");
+            CHECK_EQUAL(ObjectReader::Parse("\"hello\"// After string", true), "hello");
+            CHECK_EQUAL(ObjectReader::Parse("\"// Not a comment\"// After string", true), "// Not a comment");
+        }
+
+        SECTION("Array") {
+            CHECK_EQUAL(ObjectReader::Parse("// Befor array\n[10]", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[10]// After array", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[// Before item\n10]", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[10// After item\n]", true)->AsArray(), JsonArray({ 10u }));
+        }
+
+        SECTION("Object") {
+            CHECK_EQUAL(
+                ObjectReader::Parse("// Before object\n{\n    \"Item\" : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    // Before key\n    \"Item\" : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\"// After key\n : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : // Before value\n1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : 1234// After value\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : 1234\n}// After object", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------------
+
+    TEST_CASE(ObjectReaderTest, Parse_MultiLineComment) {
+        SECTION("OnlyComment") {
+            CHECK_EQUAL(
+                ObjectReader::Parse("/* Only a comment */", true),
+                std::nullopt
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("/*\n * Only a comment\n */", true),
+                std::nullopt
+            );
+        }
+
+        SECTION("Null") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before null */\nnull", true), nullptr);
+            CHECK_EQUAL(ObjectReader::Parse("null/* After null */", true), nullptr);
+        }
+
+        SECTION("Bool") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before bool */\ntrue", true), true);
+            CHECK_EQUAL(ObjectReader::Parse("/* Before bool */\nfalse", true), false);
+            CHECK_EQUAL(ObjectReader::Parse("true/* After bool */", true), true);
+            CHECK_EQUAL(ObjectReader::Parse("false/* After bool */", true), false);
+        }
+
+        SECTION("Int") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before int */\n0", true), 0u);
+            CHECK_EQUAL(ObjectReader::Parse("/* Before int */\n-10", true), -10);
+            CHECK_EQUAL(ObjectReader::Parse("0/* After int */", true), 0u);
+            CHECK_EQUAL(ObjectReader::Parse("-10/* After int */", true), -10);
+        }
+
+        SECTION("Real") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before real */\n1.5", true), 1.5);
+            CHECK_EQUAL(ObjectReader::Parse("/* Before real */\n-1.5", true), -1.5);
+            CHECK_EQUAL(ObjectReader::Parse("1.5/* After real */", true), 1.5);
+            CHECK_EQUAL(ObjectReader::Parse("-1.5/* After real */", true), -1.5);
+        }
+
+        SECTION("String") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before string */\n\"hello\"", true), "hello");
+            CHECK_EQUAL(ObjectReader::Parse("/* Before string */\n\"/* Not a comment */\"", true), "/* Not a comment */");
+            CHECK_EQUAL(ObjectReader::Parse("\"hello\"/* After string */", true), "hello");
+            CHECK_EQUAL(ObjectReader::Parse("\"/* Not a comment */\"/* After string */", true), "/* Not a comment */");
+        }
+
+        SECTION("Array") {
+            CHECK_EQUAL(ObjectReader::Parse("/* Before array */\n[10]", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[10]/* After array */", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[/* Before item */\n10]", true)->AsArray(), JsonArray({ 10u }));
+            CHECK_EQUAL(ObjectReader::Parse("[10/* After item */\n]", true)->AsArray(), JsonArray({ 10u }));
+        }
+
+        SECTION("Object") {
+            CHECK_EQUAL(
+                ObjectReader::Parse("/* Before object */\n{\n    \"Item\" : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    /* Before key */\n    \"Item\" : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\"/* After key */\n : 1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : /* Before value */\n1234\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : 1234/* After value */\n}", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
+            CHECK_EQUAL(
+                ObjectReader::Parse("{\n    \"Item\" : 1234\n}/* After object */", true)->AsObject(),
+                JsonObject({
+                    { "Item", 1234u }
+                })
+            );
         }
     }
 

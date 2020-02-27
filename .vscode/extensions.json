@@ -6,7 +6,7 @@
 	"recommendations": [
 		"ms-vscode.cpptools",
 		"eamodio.gitlens",
-		"vector-of-bool.cmake-tools",
+		"ms-vscode.cmake-tools",
 		"twxs.cmake",
 		"drleq.vscode-cpputf-test-adapter"
 	],

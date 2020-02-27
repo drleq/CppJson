@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -515,13 +517,23 @@ namespace json {
 
     class SimpleReader {
     public:
-        static bool Parse(std::string_view data, ISimpleReaderHooks*const hooks) {
-            State state{ data.data(), data.data() + data.size(), hooks };
+        static bool Parse(
+            std::string_view data,
+            ISimpleReaderHooks*const hooks,
+            bool ignore_comments = false
+        ) {
+            State state{
+                ignore_comments,
+                data.data(),
+                data.data() + data.size(),
+                hooks
+            };
             return ParseValue(state);
         }
 
     private:
         struct State {
+            const bool IgnoreComments;
             const char* NextChar;
             const char*const End;
             ISimpleReaderHooks*const Hooks;
@@ -533,8 +545,8 @@ namespace json {
         //----------------------------------------------------------------------------------------------------
 
         static bool ParseValue(State& state) {
-            SkipWhitespace(state);
-            if (state.Eof()) { return false; }
+            if (!SkipCommentsAndWhitespace(state)) { return false; }
+            if (state.Eof()) { return true; }
 
             switch (*state.NextChar) {
             case 't': return ParseTrue(state);
@@ -724,7 +736,7 @@ namespace json {
         static bool ParseArray(State& state) {
             ++state.NextChar;
 
-            SkipWhitespace(state);
+            if (!SkipCommentsAndWhitespace(state)) { return false; }
             if (state.Eof()) { return false; }
 
             if (!state.Hooks->OnArrayStart()) { return false; }
@@ -738,7 +750,7 @@ namespace json {
                 // Read value.
                 if (!ParseValue(state)) { return false; }
 
-                SkipWhitespace(state);
+                if (!SkipCommentsAndWhitespace(state)) { return false; }
                 if (state.Eof()) { return false; }
 
                 if (*state.NextChar == ']') {
@@ -757,7 +769,7 @@ namespace json {
         static bool ParseObject(State& state) {
             ++state.NextChar;
 
-            SkipWhitespace(state);
+            if (!SkipCommentsAndWhitespace(state)) { return false; }
             if (state.Eof()) { return false; }
 
             if (!state.Hooks->OnObjectStart()) { return false; }
@@ -771,20 +783,20 @@ namespace json {
                 // Read key.
                 if (!ParseObjectKey(state)) { return false; }
 
-                SkipWhitespace(state);
+                if (!SkipCommentsAndWhitespace(state)) { return false; }
                 if (state.Eof()) { return false; }
 
                 // Read separator.
                 if (*state.NextChar != ':') { return false; }
                 ++state.NextChar;
 
-                SkipWhitespace(state);
+                if (!SkipCommentsAndWhitespace(state)) { return false; }
                 if (state.Eof()) { return false; }
 
                 // Read value.
                 if (!ParseValue(state)) { return false; }
 
-                SkipWhitespace(state);
+                if (!SkipCommentsAndWhitespace(state)) { return false; }
                 if (state.Eof()) { return false; }
 
                 if (*state.NextChar == '}') {
@@ -795,7 +807,7 @@ namespace json {
                 if (*state.NextChar != ',') { return false; }
                 ++state.NextChar;
 
-                SkipWhitespace(state);
+                if (!SkipCommentsAndWhitespace(state)) { return false; }
                 if (state.Eof()) { return false; }
             }
         }
@@ -846,6 +858,146 @@ namespace json {
                 }
             }
         }
+
+        //----------------------------------------------------------------------------------------------------
+
+        static bool SkipCommentsAndWhitespace(State& state) {
+            while (!state.Eof()) {
+                SkipWhitespace(state);
+
+                if (*state.NextChar != '/') {
+                    return true;
+                }
+                if (!ParseComment(state)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        //----------------------------------------------------------------------------------------------------
+
+        static bool ParseComment(State& state) {
+            if (!state.IgnoreComments) {
+                return false;
+            }
+
+            ++state.NextChar;
+            if (*state.NextChar == '/') {
+                // Single line comment
+                ++state.NextChar;
+                ScanEndOfLine(state);
+                return true;
+
+            } else if (*state.NextChar == '*') {
+                // Multi-line comment
+                ++state.NextChar;
+                return ScanEndOfMultilineComment(state);
+
+            } else {
+                // Invalid.
+                return false;
+            }
+        }
+
+        //----------------------------------------------------------------------------------------------------
+
+        static void ScanEndOfLine(State& state) {
+#ifdef CPPJSON_USE_SSE
+            const __m128i NewlineChar128 = _mm_set1_epi8('\n');
+
+            // SSE2 main loop.
+            size_t loop_count = state.BytesRemaining() / sizeof(__m128i);
+            while (loop_count != 0) {
+                __m128i chars = _mm_loadu_si128(reinterpret_cast<const __m128i*>(state.NextChar));
+
+                __m128i mask_newline = _mm_cmpeq_epi8(chars, NewlineChar128);
+
+                uint16_t bitmask = static_cast<uint16_t>(_mm_movemask_epi8(mask_newline));
+                if (bitmask != 0) {
+#ifdef _GNUG_
+                    int32_t offset = __builtin_ffs(static_cast<int32_t>(bitmask)) - 1;
+#endif
+#ifdef _MSC_VER
+                    unsigned long offset;
+                    _BitScanForward(&offset, static_cast<uint32_t>(bitmask));
+#endif
+                    state.NextChar += offset + 1;
+                    return;
+                }
+
+                --loop_count;
+                state.NextChar += sizeof(__m128i);
+            }
+
+            // Plain loop for the <16 remaining chars.
+#endif
+
+            for (; !state.Eof(); ++state.NextChar) {
+                if (*state.NextChar == '\n') {
+                    ++state.NextChar;
+                    return;
+                }
+            }
+        }
+
+        //----------------------------------------------------------------------------------------------------
+
+        static bool ScanEndOfMultilineComment(State& state) {
+#ifdef CPPJSON_USE_SSE
+            const __m128i AsteriskChar128 = _mm_set1_epi8('*');
+            const __m128i SlashChar128 = _mm_set1_epi8(static_cast<uint8_t>('//'));
+
+            // SSE2 main loop.
+            size_t loop_count = state.BytesRemaining() / sizeof(__m128i);
+            if (loop_count != 0) {
+                uint16_t bitmask_asterisk = 0;
+                while (loop_count != 0) {
+                    __m128i chars = _mm_loadu_si128(reinterpret_cast<const __m128i*>(state.NextChar));
+
+                    __m128i mask_asterisk = _mm_cmpeq_epi8(chars, AsteriskChar128);
+                    __m128i mask_slash = _mm_cmpeq_epi8(chars, SlashChar128);
+                    uint16_t bitmask_slash = static_cast<uint16_t>(_mm_movemask_epi8(mask_slash));
+                    bitmask_asterisk |= static_cast<uint16_t>(_mm_movemask_epi8(mask_asterisk)) << 1;
+
+                    uint16_t bitmask_end_comment = bitmask_slash & bitmask_asterisk;
+                    if (bitmask_end_comment != 0) {
+#ifdef _GNUG_
+                        int32_t offset = __builtin_ffs(static_cast<int32_t>(bitmask_end_comment)) - 1;
+#endif
+#ifdef _MSC_VER
+                        unsigned long offset;
+                        _BitScanForward(&offset, static_cast<uint32_t>(bitmask_end_comment));
+#endif
+                        state.NextChar += offset + 1;
+                        return true;
+                    }
+
+                    --loop_count;
+                    state.NextChar += sizeof(__m128i);
+                    bitmask_asterisk = static_cast<uint16_t>(_mm_movemask_epi8(mask_asterisk)) >> (sizeof(__m128i) - 1);
+                }
+            }
+
+            // Plain loop for the <16 remaining chars.
+#endif
+
+            for (; !state.Eof(); ++state.NextChar) {
+                if (*state.NextChar == '*') {
+                    ++state.NextChar;
+                    break;
+                }
+            }
+            for (; !state.Eof(); ++state.NextChar) {
+                if (*state.NextChar == '/') {
+                    ++state.NextChar;
+                    return true;
+                }
+            }
+
+            return false;
+        }
     };
 
     //--------------------------------------------------------------------------------------------------------
@@ -854,13 +1006,14 @@ namespace json {
         private ISimpleReaderHooks
     {
     public:
-        static std::optional<JsonValue> Parse(std::string_view data) {
+        static std::optional<JsonValue> Parse(std::string_view data, bool ignore_comments = false) {
             ObjectReader parser;
-            if (!SimpleReader::Parse(data, &parser)) {
+            if (!SimpleReader::Parse(data, &parser, ignore_comments)) {
                 return std::nullopt;
             }
             
             if (parser.m_stack_top != -1) { return false; }
+            if (!parser.m_has_top_value) { return std::nullopt; }
             return std::make_optional(std::move(parser.m_stack[0].Value));
         }
 
